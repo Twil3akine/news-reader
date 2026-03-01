@@ -1,3 +1,5 @@
 .env
 news.db*
 target
+**/fetcher.log
+news.db
