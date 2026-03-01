@@ -2,6 +2,7 @@ use feed_rs::parser;
 use reqwest::Client;
 use sqlx::sqlite::SqlitePoolOptions;
 use url::Url;
+use chrono::Local;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -21,18 +22,18 @@ async fn main() -> anyhow::Result<()> {
     ];
 
     for (feed_name, feed_url) in feeds {
-        println!("Fetching {}...", feed_name);
+        println!("[{}] Fetching {}...", Local::now().format("%Y-%m-%d %H:%M:%S"), feed_name);
 
         let response = match client.get(feed_url).send().await {
             Ok(res) => {
                 if !res.status().is_success() {
-                    eprintln!("  -> HTTP Error: {} (Status: {})", feed_name, res.status());
+                    eprintln!("[{}]   -> HTTP Error: {} (Status: {})", Local::now().format("%Y-%m-%d %H:%M:%S"), feed_name, res.status());
                     continue;
                 }
                 res
             }
             Err(e) => {
-                eprintln!("  -> Network Error {}: {}", feed_name, e);
+                eprintln!("[{}]   -> Network Error {}: {}", Local::now().format("%Y-%m-%d %H:%M:%S"), feed_name, e);
                 continue;
             }
         };
@@ -40,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
         let content = match response.bytes().await {
             Ok(b) => b,
             Err(e) => {
-                eprintln!("  -> Read Error {}: {}", feed_name, e);
+                eprintln!("[{}]   -> Read Error {}: {}", Local::now().format("%Y-%m-%d %H:%M:%S"), feed_name, e);
                 continue;
             }
         };
@@ -48,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
         let feed = match parser::parse(&content[..]) {
             Ok(f) => f,
             Err(e) => {
-                eprintln!("  -> Parse Error {}: {}", feed_name, e);
+                eprintln!("[{}]   -> Parse Error {}: {}", Local::now().format("%Y-%m-%d %H:%M:%S"), feed_name, e);
                 continue;
             }
         };
@@ -103,9 +104,9 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        println!("  -> Fetched and saved {} new articles.", new_count);
+        println!("[{}]   -> Fetched and saved {} new articles.", Local::now().format("%Y-%m-%d %H:%M:%S"), new_count);
     }
 
-    println!("Fetch completed.");
+    println!("[{}] Fetch completed.", Local::now().format("%Y-%m-%d %H:%M:%S"));
     Ok(())
 }
