@@ -1,7 +1,7 @@
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool, sqlite::SqlitePoolOptions};
@@ -14,16 +14,17 @@ struct AppState {
 
 #[derive(Deserialize)]
 struct ArticleQuery {
-    show_all: Option<bool>,
+    page: Option<u32>,
 }
 
-#[derive(Serialize, FromRow)]
+#[derive(Serialize, FromRow, Clone)]
 struct Article {
     id: i64,
     title: String,
     url: String,
     source: String,
     published_at: String,
+    is_read: bool,
 }
 
 #[derive(Deserialize)]
@@ -50,7 +51,8 @@ async fn main() {
         .route("/api/articles", get(get_articles))
         .route("/api/articles/{id}/read", post(mark_as_read))
         .route("/api/mutewords", get(get_mutewords).post(add_muteword))
-        .layer(CorsLayer::permissive()) // ローカル開発用にCORSを全許可
+        .route("/api/mutewords/{id}", delete(delete_muteword))
+        .layer(CorsLayer::permissive())
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
@@ -64,21 +66,19 @@ async fn get_articles(
     State(state): State<AppState>,
     Query(params): Query<ArticleQuery>,
 ) -> Json<Vec<Article>> {
-    // ミュートワードを含まない未読記事を取得
     let mut query = String::from(
-        "SELECT id, title, url, source, published_at
+        "SELECT id, title, url, source, published_at, is_read
          FROM articles
-         WHERE is_read = 0
-         AND NOT EXISTS (
-             SELECT 1 FROM mute_words WHERE articles.title LIKE '%' || mute_words.word || '%'
-         )",
+         WHERE NOT EXISTS (
+             SELECT 1 FROM mute_words WHERE LOWER(articles.title) LIKE '%' || LOWER(mute_words.word) || '%'
+         )
+         ORDER BY published_at DESC"
     );
 
-    // 30日制限
-    if !params.show_all.unwrap_or(false) {
-        query.push_str(" AND published_at >= datetime('now', '-30 days')");
-    }
-    query.push_str(" ORDER BY published_at DESC");
+    let limit = 50;
+    let page = params.page.unwrap_or(1);
+    let offset = (page - 1) * limit;
+    query.push_str(&format!(" LIMIT {} OFFSET {}", limit, offset));
 
     let articles = sqlx::query_as::<_, Article>(&query)
         .fetch_all(&state.pool)
@@ -116,5 +116,13 @@ async fn add_muteword(
                 .execute(&state.pool)
                 .await;
     }
+    Json(())
+}
+
+async fn delete_muteword(State(state): State<AppState>, Path(id): Path<i64>) -> Json<()> {
+    let _ = sqlx::query("DELETE FROM mute_words WHERE id = ?")
+        .bind(id)
+        .execute(&state.pool)
+        .await;
     Json(())
 }
