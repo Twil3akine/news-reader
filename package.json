@@ -1,0 +1,15 @@
+{
+  "name": "my-news-app",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "fetch": "cd backend && cargo run --bin fetcher",
+    "watch-fetch": "while true; do bun run fetch; sleep 600; done",
+    "server": "cd backend && cargo run --bin server",
+    "frontend": "cd frontend && bun run dev",
+    "all": "concurrently \"bun run watch-fetch\" \"bun run server\" \"bun run frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

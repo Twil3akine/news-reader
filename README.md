@@ -1,28 +1,15 @@
-# News Reader
+# news-reader
 
-## 概要
-自分専用RSSビューア
+To install dependencies:
 
-対象: Zenn RSS
-保存: SQLite
-ミュート: titleベース
+```bash
+bun install
+```
 
-## 起動方法
+To run:
 
-cargo run
+```bash
+bun run index.ts
+```
 
-http://localhost:3000/articles
-
-## API
-
-GET /articles
-GET /mute
-POST /mute
-DELETE /mute/:id
-
-## 仕様
-
-- 300件取得
-- INSERT OR IGNORE
-- 未読優先
-- 新着順
+This project was created using `bun init` in bun v1.3.10. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
