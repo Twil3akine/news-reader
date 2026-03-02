@@ -1,8 +1,8 @@
+use chrono::Local;
 use feed_rs::parser;
 use reqwest::Client;
 use sqlx::sqlite::SqlitePoolOptions;
 use url::Url;
-use chrono::Local;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -16,24 +16,43 @@ async fn main() -> anyhow::Result<()> {
     // RSSフィードのリスト（HatenaはIT総合、ZDNetは正しいURLに修正）
     let feeds = vec![
         ("Zenn Feed", "https://zenn.dev/feed"),
+        ("Zenn Hono Feed", "https://zenn.dev/topics/hono/feed"),
+        ("Zenn Rust Feed", "https://zenn.dev/topics/rust/feed"),
+        ("Zenn Go Feed", "https://zenn.dev/topics/go/feed"),
         ("Qiita Feed", "https://qiita.com/popular-items/feed"),
+        ("Qiita Hono Feed", "https://qiita.com/tags/hono/feed.atom"),
+        ("Qiita Rust Feed", "https://qiita.com/tags/rust/feed.atom"),
+        ("Qiita Go Feed", "https://qiita.com/tags/go/feed.atom"),
         ("Hatena IT Feed", "https://b.hatena.ne.jp/hotentry/it.rss"),
-        ("ZDNet Feed", "https://japan.zdnet.com/rss/news/index.rdf"),
     ];
 
     for (feed_name, feed_url) in feeds {
-        println!("[{}] Fetching {}...", Local::now().format("%Y-%m-%d %H:%M:%S"), feed_name);
+        println!(
+            "[{}] Fetching {}...",
+            Local::now().format("%Y-%m-%d %H:%M:%S"),
+            feed_name
+        );
 
         let response = match client.get(feed_url).send().await {
             Ok(res) => {
                 if !res.status().is_success() {
-                    eprintln!("[{}]   -> HTTP Error: {} (Status: {})", Local::now().format("%Y-%m-%d %H:%M:%S"), feed_name, res.status());
+                    eprintln!(
+                        "[{}]   -> HTTP Error: {} (Status: {})",
+                        Local::now().format("%Y-%m-%d %H:%M:%S"),
+                        feed_name,
+                        res.status()
+                    );
                     continue;
                 }
                 res
             }
             Err(e) => {
-                eprintln!("[{}]   -> Network Error {}: {}", Local::now().format("%Y-%m-%d %H:%M:%S"), feed_name, e);
+                eprintln!(
+                    "[{}]   -> Network Error {}: {}",
+                    Local::now().format("%Y-%m-%d %H:%M:%S"),
+                    feed_name,
+                    e
+                );
                 continue;
             }
         };
@@ -41,7 +60,12 @@ async fn main() -> anyhow::Result<()> {
         let content = match response.bytes().await {
             Ok(b) => b,
             Err(e) => {
-                eprintln!("[{}]   -> Read Error {}: {}", Local::now().format("%Y-%m-%d %H:%M:%S"), feed_name, e);
+                eprintln!(
+                    "[{}]   -> Read Error {}: {}",
+                    Local::now().format("%Y-%m-%d %H:%M:%S"),
+                    feed_name,
+                    e
+                );
                 continue;
             }
         };
@@ -49,7 +73,12 @@ async fn main() -> anyhow::Result<()> {
         let feed = match parser::parse(&content[..]) {
             Ok(f) => f,
             Err(e) => {
-                eprintln!("[{}]   -> Parse Error {}: {}", Local::now().format("%Y-%m-%d %H:%M:%S"), feed_name, e);
+                eprintln!(
+                    "[{}]   -> Parse Error {}: {}",
+                    Local::now().format("%Y-%m-%d %H:%M:%S"),
+                    feed_name,
+                    e
+                );
                 continue;
             }
         };
@@ -104,9 +133,16 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        println!("[{}]   -> Fetched and saved {} new articles.", Local::now().format("%Y-%m-%d %H:%M:%S"), new_count);
+        println!(
+            "[{}]   -> Fetched and saved {} new articles.",
+            Local::now().format("%Y-%m-%d %H:%M:%S"),
+            new_count
+        );
     }
 
-    println!("[{}] Fetch completed.", Local::now().format("%Y-%m-%d %H:%M:%S"));
+    println!(
+        "[{}] Fetch completed.",
+        Local::now().format("%Y-%m-%d %H:%M:%S")
+    );
     Ok(())
 }
