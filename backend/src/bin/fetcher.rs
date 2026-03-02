@@ -23,7 +23,6 @@ async fn main() -> anyhow::Result<()> {
         ("Qiita Hono Feed", "https://qiita.com/tags/hono/feed.atom"),
         ("Qiita Rust Feed", "https://qiita.com/tags/rust/feed.atom"),
         ("Qiita Go Feed", "https://qiita.com/tags/go/feed.atom"),
-        ("Hatena IT Feed", "https://b.hatena.ne.jp/hotentry/it.rss"),
     ];
 
     for (feed_name, feed_url) in feeds {
@@ -106,11 +105,7 @@ async fn main() -> anyhow::Result<()> {
                 match parsed_url.host_str().unwrap_or("Others") {
                     "zenn.dev" => "Zenn".to_string(),
                     "qiita.com" => "Qiita".to_string(),
-                    host if host.contains("hatenablog.com") || host.contains("hatena.blog") => {
-                        "Hatena Blog".to_string()
-                    }
-                    "japan.zdnet.com" => "ZDNet".to_string(),
-                    _ => "Others".to_string(), // Zenn, Qiita, Hatena Blog, ZDNet以外はすべてOthers
+                    _ => "Others".to_string(),
                 }
             } else {
                 "Others".to_string()
